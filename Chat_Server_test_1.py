@@ -3,45 +3,87 @@ import select
 import sys
 from thread import *
 
+Stu_ID = "13317728"
 Connection_List = []
-Seq_num = 1
+Seq_num = "1"
 CRN = room1
 Ser_IP = socket.gethostbyname(socket.gethostname())
-Room_Ref = 1
+Room_Ref = "1"
 Join_ID = Seq_num
-serverPort = 81
+serverPort = "81"
 
 serverSocket = socket(AF_INET,SOCK_STREAM)
 serverSocket.bind(('', serverPort))
 serverSocket.listen(10)
-print 'The server is ready to receive on Port' + serverPort
+print 'The server is ready to receive on Port: ' + serverPort
 
-Connection_List.append(serverSocket)
-print "Connection List: " + Connection_List
+#Test for basic connection with client - Expecting "Helo" type message
+Conn = serverSocket.accept()
+Data = Conn.recv(4096)
+print "Data from base connection client: " + Data
+response = (Data, "IP: " +Ser_IP, "Port: " + serverPort, "Student ID: " + Stu_ID)
+Conn.send(response)
 
 while 1:
-        read_sockets, write_sockets, error_sockets = select.select(Connection_List, [], [])
+        conn = serverSocket.accept()
+        data = conn.recv(4096)
+        #Need to look at parsing the data coming from the client
+        mylist = data.split(" ")
+        print mylist
+        
+        #Condition for joining chat room
+        if mylist[0] == "JOIN_CHATROOM:":
+                Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])
+                reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
+                conn.send(reply_j)
+                
+        #Condition for joining multiple chat rooms
+        if mylist[0] == "JOIN_CHATROOM:" and Connection_List[4] == 1:
+                Room_Ref = "2"
+                reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
+                conn.send(reply_j)
+                
+        #Condition for leaving chat room
+        if mylist[0] == "LEAVE_CHATROOM:" and mylist[4] == Connection_List[4]:
+                Connection_List.remove(serverSocket, CRN, Room_Ref, Join_ID)
+                reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
+                conn.send(reply_l)
 
-        for sock in read_sockets:
-                #For New Connections
-                if sock == serverSocket:
-                        sockfc, addr = serverSocket.accept()
-                        Connection_List.append(sockfc)
-                        print "Connection List: " + Connection_List
-                        JOIN(CRN, Ser_IP, serverPort, Room_Ref, Join_ID)
-                        print "Client (%s, %s) connected" % addr
-                        broadcast(sockfc, "[%s:%s] entered chat room\n" % addr)
-                #else:
-                        #Deal with messages coming from the client - including with "Nonsense" messages
+        #Start new thread
+        start_new_thread(clientthread, (conn,))
 
 
+#Function for handling connections. Used to create Threads - Attempt 1
+def clientthread(connection):
+        #Infinite Loop that does not terminate
+        while True:
+                #Receive data from client
+                data = connection.recv(4096)
+                mylist = data.split(" ")
+                print mylist
+        #break
+        
 
 
 
 #Join the chat room - Response sent to client after establishing socket connection
-def JOIN(CRN, Ser_IP, Port, Room_Ref, Join_ID):        
+def JOIN_single(CRN, Ser_IP, Port, Room_Ref, Join_ID):
+        response = ("JOINED CHATROOM: "+ str(CRN), "SERVER_IP: " + Ser_IP, "PORT: " + Port, "ROOM_REF: " + Room_Ref, "JOIN_ID: " + Join_ID)
+        print "Client (%s, %s) connected" % addr
+        print "Response sent to Client on connection: " + response
+
+        return response
+
+def JOIN_multiple(CRN, Ser_IP, Port, Room_Ref, Join_ID):        
         response = ("JOINED CHATROOM:"+str(CRN), Ser_IP, Port, Room_Ref, Join_ID)
-        print "Response sent to Client on first connection: " + response
+        #print "Response sent to Client on connection: " + response
+
+        return response
+
+#Leave the chat room - Response sent to client after requesting to leave
+def LEAVE_single(CRN, Room_Ref, JOIN_ID):
+        response = ("LEFT CHATROOM: " +str(CRN), "ROOM_REF: " + Room_Ref, "JOIN_ID: " + JOIN_ID)
+        print "Response sent to client when leaving: " + response
 
         return response
 
