@@ -6,11 +6,12 @@ from thread import *
 Stu_ID = "13317728"
 Connection_List = []
 Seq_num = "1"
-CRN = room1
+CRN = "room1"
 Ser_IP = socket.gethostbyname(socket.gethostname())
 Room_Ref = "1"
 Join_ID = Seq_num
 serverPort = "81"
+connections = set()
 
 serverSocket = socket(AF_INET,SOCK_STREAM)
 serverSocket.bind(('', serverPort))
@@ -20,6 +21,7 @@ print 'The server is ready to receive on Port: ' + serverPort
 #Test for basic connection with client - Expecting "Helo" type message
 Conn = serverSocket.accept()
 Data = Conn.recv(4096)
+
 print "Data from base connection client: " + Data
 response = (Data, "IP: " +Ser_IP, "Port: " + serverPort, "Student ID: " + Stu_ID)
 Conn.send(response)
@@ -27,6 +29,9 @@ Conn.send(response)
 while 1:
         conn = serverSocket.accept()
         data = conn.recv(4096)
+        print "Connection received. Adding to registry"
+        connections.add(conn)
+        
         #Need to look at parsing the data coming from the client
         mylist = data.split(" ")
         print mylist
@@ -50,7 +55,11 @@ while 1:
                 conn.send(reply_l)
 
         #Start new thread
-        start_new_thread(clientthread, (conn,))
+        #start_new_thread(clientthread, (conn,))
+
+        #Deal with messages and disconnections using Threads
+        threading.Thread(target = receive, args = [conn]).start()
+
 
 
 #Function for handling connections. Used to create Threads - Attempt 1
@@ -63,9 +72,6 @@ def clientthread(connection):
                 print mylist
         #break
         
-
-
-
 #Join the chat room - Response sent to client after establishing socket connection
 def JOIN_single(CRN, Ser_IP, Port, Room_Ref, Join_ID):
         response = ("JOINED CHATROOM: "+ str(CRN), "SERVER_IP: " + Ser_IP, "PORT: " + Port, "ROOM_REF: " + Room_Ref, "JOIN_ID: " + Join_ID)
@@ -87,12 +93,18 @@ def LEAVE_single(CRN, Room_Ref, JOIN_ID):
 
         return response
 
-#Function to broadcast chat messages to all connected clients
-def broadcast(sock, message):
-        for socket in Connection_List:
-                if socket != serverSocket and socket != sock:
-                        try:
-                                socket.send(message)
-                        except:
-                                socket.close()
-                                Connection_List.remove(socket)
+#Function to send to all the clients present in the connection list
+def send_all(message):
+        for connection in connections:
+                connection.send(message)
+
+def receive(conn):
+        while True:
+                message = conn.recv(1024)
+                if not message:
+                        print "Closing connection and removing from registry"
+                        conn.remove(conn)
+                        return
+                print "Received %s, sending to all" % message
+                send_all(message)
+                
