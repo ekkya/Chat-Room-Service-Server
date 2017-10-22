@@ -5,7 +5,7 @@ from thread import *
 
 Stu_ID = "13317728"
 Connection_List = []
-Seq_num = "1"
+Seq_num = 1
 CRN = "room1"
 Ser_IP = socket.gethostbyname(socket.gethostname())
 Room_Ref = "1"
@@ -38,16 +38,24 @@ while 1:
         
         #Condition for joining chat room
         if mylist[0] == "JOIN_CHATROOM:":
+                Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])                
+                reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
+                conn.send(reply_j)
+                Seq_num = Seq_num + 1   #Increase Join_ID by 1 for new client
+                Join_ID = Seq_num
+
+        #Condition for multiple clients joining the same chat room (room1)
+        if mylist[0] == "JOIN_CHATROOM:" and Connection_List[4] > 1:
                 Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])
                 reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
                 conn.send(reply_j)
                 
-        #Condition for joining multiple chat rooms
+        #Condition for same client joining multiple chat rooms
         if mylist[0] == "JOIN_CHATROOM:" and Connection_List[4] == 1:
                 Room_Ref = "2"
                 reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
                 conn.send(reply_j)
-                
+        
         #Condition for leaving chat room
         if mylist[0] == "LEAVE_CHATROOM:" and mylist[4] == Connection_List[4]:
                 Connection_List.remove(serverSocket, CRN, Room_Ref, Join_ID)
@@ -74,7 +82,7 @@ def clientthread(connection):
         
 #Join the chat room - Response sent to client after establishing socket connection
 def JOIN_single(CRN, Ser_IP, Port, Room_Ref, Join_ID):
-        response = ("JOINED CHATROOM: "+ str(CRN), "SERVER_IP: " + Ser_IP, "PORT: " + Port, "ROOM_REF: " + Room_Ref, "JOIN_ID: " + Join_ID)
+        response = ("JOINED CHATROOM: "+ CRN, "SERVER_IP: " + Ser_IP, "PORT: " + Port, "ROOM_REF: " + Room_Ref, "JOIN_ID: " + Join_ID)
         print "Client (%s, %s) connected" % addr
         print "Response sent to Client on connection: " + response
 
