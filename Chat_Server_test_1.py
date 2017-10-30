@@ -1,4 +1,4 @@
-from socket import *
+import socket
 import select
 import sys
 from thread import *
@@ -8,29 +8,30 @@ Connection_List = []
 Seq_num = 1
 CRN = "room1"
 Ser_IP = socket.gethostbyname(socket.gethostname())
+print Ser_IP
 Room_Ref = "1"
 Join_ID = Seq_num
-serverPort = "81"
+serverPort = 85
 connections = set()
 
-serverSocket = socket(AF_INET,SOCK_STREAM)
+serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 serverSocket.bind(('', serverPort))
 serverSocket.listen(10)
-print 'The server is ready to receive on Port: ' + serverPort
+print 'The server is ready to receive on Port: ' + str(serverPort)
 
 #Test for basic connection with client - Expecting "Helo" type message
 Conn = serverSocket.accept()
 Data = Conn.recv(4096)
 
 print "Data from base connection client: " + Data
-response = (Data, "IP: " +Ser_IP, "Port: " + serverPort, "Student ID: " + Stu_ID)
+response = (Data, "IP: " +Ser_IP, "Port: " + str(serverPort), "Student ID: " + Stu_ID)
 Conn.send(response)
 
-while 1:
+while data != "KILL_SERVICE":
         conn = serverSocket.accept()
         data = conn.recv(4096)
         print "Connection received. Adding to registry"
-        connections.add(conn)
+        Connection_List.add(conn)
         
         #Need to look at parsing the data coming from the client
         mylist = data.split(" ")
@@ -38,7 +39,7 @@ while 1:
         
         #Condition for joining chat room
         if mylist[0] == "JOIN_CHATROOM:":
-                Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])                
+                Connection_List.add(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])                
                 reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
                 conn.send(reply_j)
                 Seq_num = Seq_num + 1   #Increase Join_ID by 1 for new client
@@ -46,7 +47,7 @@ while 1:
 
         #Condition for multiple clients joining the same chat room (room1)
         if mylist[0] == "JOIN_CHATROOM:" and Connection_List[4] > 1:
-                Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])
+                Connection_List.add(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])
                 reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
                 conn.send(reply_j)
                 
@@ -61,6 +62,18 @@ while 1:
                 Connection_List.remove(serverSocket, CRN, Room_Ref, Join_ID)
                 reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
                 conn.send(reply_l)
+
+        #Condition for same client leaving multiple chat rooms
+        if mylist[0] == "LEAVE_CHATROOM:" and mylist[4] == Connection_List[4]:
+                if Connection_List[3] == "1":
+                        Room_Ref = "1"
+                        reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
+                        conn.send(reply_l)
+                elif Connection_List[3] == "2":
+                        Room_Ref = "2"
+                        reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
+                        conn.send(reply_l)
+        
 
         #Start new thread
         #start_new_thread(clientthread, (conn,))
