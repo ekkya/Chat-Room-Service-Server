@@ -11,11 +11,11 @@ Ser_IP = socket.gethostbyname(socket.gethostname())
 print Ser_IP
 Room_Ref = "1"
 Join_ID = Seq_num
-serverPort = 85
+serverPort = 1001
 connections = set()
 
 serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-serverSocket.bind(('', serverPort))
+serverSocket.bind((socket.gethostname(), serverPort))
 serverSocket.listen(10)
 print 'The server is ready to receive on Port: ' + str(serverPort)
 
