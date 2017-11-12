@@ -11,13 +11,14 @@ Ser_IP = socket.gethostbyname(socket.gethostname())
 print Ser_IP
 Room_Ref = "1"
 Join_ID = Seq_num
-serverPort = 22
 connections = set()
 
 serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-serverSocket.bind((socket.gethostname(), serverPort))
+serverSocket.bind(('0.0.0.0', 0))
 serverSocket.listen(10)
-print 'The server is ready to receive on Port: ' + str(serverPort)
+serverPort = serverSocket.getsockname()[1]
+print serverPort
+print 'The server is ready to receive on Port: ' + str(serverSocket.getsockname()[1])
 
 #Test for basic connection with client - Expecting "Helo" type message
 Conn = serverSocket.accept()
