@@ -11,7 +11,7 @@ Ser_IP = socket.gethostbyname(socket.gethostname())
 print Ser_IP
 Room_Ref = "1"
 Join_ID = Seq_num
-serverPort = 1001
+serverPort = 22
 connections = set()
 
 serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
