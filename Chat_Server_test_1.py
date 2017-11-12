@@ -21,11 +21,14 @@ print serverPort
 print 'The server is ready to receive on Port: ' + str(serverSocket.getsockname()[1])
 
 #Test for basic connection with client - Expecting "Helo" type message
-Conn = serverSocket.accept()
-Data = Conn.recv(4096)
+Conn, address = serverSocket.accept()
+print Conn
+Data = Conn.recv(1024)
 
 print "Data from base connection client: " + Data
-response = (Data, "IP: " +Ser_IP, "Port: " + str(serverPort), "Student ID: " + Stu_ID)
+response = (Data, "IP: " +Ser_IP, "Port: " + str(serverPort), "Student ID: " + Stu_ID)   #Need to print to separate lines
+resp = str(response)
+print resp
 Conn.send(response)
 
 while data != "KILL_SERVICE":
