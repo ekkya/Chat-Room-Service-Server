@@ -31,7 +31,7 @@ resp = str(response)
 print resp
 Conn.send(response)
 
-while data != "KILL_SERVICE":
+while Data != "KILL_SERVICE":
         conn = serverSocket.accept()
         data = conn.recv(4096)
         print "Connection received. Adding to registry"
