@@ -2,6 +2,7 @@ import socket
 import select
 import sys
 from thread import *
+import threading
 
 Stu_ID = "13317728"
 Connection_List = []
@@ -35,19 +36,17 @@ resp = str(response + "\n" + response1 + "\n" + response2 + "\n" + response3)
 Conn.sendall(resp)
 
 ##Start thread and kill thread when Data == "KILL_SERVICE"
-while Data != "KILL_SERVICE":
+while True:
+	start_new_thread(datathread, (Conn,))
+	start_new_thread(clientthread, (Conn,))
+	
+
+#Function for handling connections. Used to create Threads - Attempt 1
+def clientthread(Conn):
         Data = Conn.recv(1024)
 	print "Current:" + Data
-	if Data != "JOIN_CHATROOM" or Data != "LEAVE_CHATROOM":
-		print "This is Rubbish"
-		continue
-	elif Data == "KILL_SERVICE":
-		print "Goodbye!"
-		serverSocket.close()
-		serverSocket.shutdown()
-        else:
-		print "Connection received. Adding to registry"
-        	Connection_List.append(Conn)
+	print "Connection received. Adding to registry"
+        Connection_List.append(Conn)
         
         #Need to look at parsing the data coming from the client
         	mylist = data.split(" ")
@@ -89,26 +88,21 @@ while Data != "KILL_SERVICE":
 		                Room_Ref = "2"
 		                reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
 		                Conn.send(reply_l)
-		
+		print "END!!!"
+		break
 
-		#Start new thread
-		#start_new_thread(clientthread, (conn,))
-
-		#Deal with messages and disconnections using Threads
-		#threading.Thread(target = receive, args = [conn]).start()
-	#break
-
-
-#Function for handling connections. Used to create Threads - Attempt 1
-def clientthread(connection):
-        #Infinite Loop that does not terminate
-        while True:
-                #Receive data from client
-                data = connection.recv(4096)
-                mylist = data.split(" ")
-                print mylist
-        #break
-        
+def datathread(Conn):
+	Data = Conn.recv(1024)
+	print "Current:" + Data
+	if Data != "JOIN_CHATROOM" and Data != "LEAVE_CHATROOM" and Data != "KILL_SERVICE":
+		print "This is Rubbish"
+		continue
+	elif Data == "KILL_SERVICE":
+		print "Goodbye!"
+		Conn.close()
+	else:
+		break
+	   
 #Join the chat room - Response sent to client after establishing socket connection
 def JOIN_single(CRN, Ser_IP, Port, Room_Ref, Join_ID):
         response = ("JOINED CHATROOM: "+ CRN, "SERVER_IP: " + Ser_IP, "PORT: " + Port, "ROOM_REF: " + Room_Ref, "JOIN_ID: " + Join_ID)
