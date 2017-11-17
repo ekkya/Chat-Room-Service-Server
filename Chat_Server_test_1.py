@@ -26,65 +26,77 @@ print Conn
 Data = Conn.recv(1024)
 
 print "Data from base connection client: " + Data
-response = (Data, "IP: " +Ser_IP, "Port: " + str(serverPort), "Student ID: " + Stu_ID)   #Need to print to separate lines
-resp = str(response)
-print resp
-Conn.send(response)
+response = Data.rstrip()
+response1 = "IP:"+Ser_IP
+response2 = "Port:"+str(serverPort)
+response3 = "StudentID:"+Stu_ID
 
+resp = str(response + "\n" + response1 + "\n" + response2 + "\n" + response3)
+Conn.sendall(resp)
+
+##Start thread and kill thread when Data == "KILL_SERVICE"
 while Data != "KILL_SERVICE":
-        conn = serverSocket.accept()
-        data = conn.recv(4096)
-        print "Connection received. Adding to registry"
-        Connection_List.add(conn)
+        Data = Conn.recv(1024)
+	print "Current:" + Data
+	if Data != "JOIN_CHATROOM" or Data != "LEAVE_CHATROOM":
+		print "This is Rubbish"
+		continue
+	elif Data == "KILL_SERVICE":
+		print "Goodbye!"
+		serverSocket.close()
+		serverSocket.shutdown()
+        else:
+		print "Connection received. Adding to registry"
+        	Connection_List.append(Conn)
         
         #Need to look at parsing the data coming from the client
-        mylist = data.split(" ")
-        print mylist
+        	mylist = data.split(" ")
+        	print mylist
         
-        #Condition for joining chat room
-        if mylist[0] == "JOIN_CHATROOM:":
-                Connection_List.add(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])                
-                reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
-                conn.send(reply_j)
-                Seq_num = Seq_num + 1   #Increase Join_ID by 1 for new client
-                Join_ID = Seq_num
+		#Condition for joining chat room
+		if mylist[0] == "JOIN_CHATROOM:":
+		        Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])                
+		        reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
+		        Conn.send(reply_j)
+		        Seq_num = Seq_num + 1   #Increase Join_ID by 1 for new client
+		        Join_ID = Seq_num
 
-        #Condition for multiple clients joining the same chat room (room1)
-        if mylist[0] == "JOIN_CHATROOM:" and Connection_List[4] > 1:
-                Connection_List.add(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])
-                reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
-                conn.send(reply_j)
-                
-        #Condition for same client joining multiple chat rooms
-        if mylist[0] == "JOIN_CHATROOM:" and Connection_List[4] == 1:
-                Room_Ref = "2"
-                reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
-                conn.send(reply_j)
-        
-        #Condition for leaving chat room
-        if mylist[0] == "LEAVE_CHATROOM:" and mylist[4] == Connection_List[4]:
-                Connection_List.remove(serverSocket, CRN, Room_Ref, Join_ID)
-                reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
-                conn.send(reply_l)
+		#Condition for multiple clients joining the same chat room (room1)
+		if mylist[0] == "JOIN_CHATROOM:" and Connection_List[4] > 1:
+		        Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])
+		        reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
+		        Conn.send(reply_j)
+		        
+		#Condition for same client joining multiple chat rooms
+		if mylist[0] == "JOIN_CHATROOM:" and Connection_List[4] == 1:
+		        Room_Ref = "2"
+		        reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
+		        Conn.send(reply_j)
+		
+		#Condition for leaving chat room
+		if mylist[0] == "LEAVE_CHATROOM:" and mylist[4] == Connection_List[4]:
+		        Connection_List.remove(serverSocket, CRN, Room_Ref, Join_ID)
+		        reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
+		        Conn.send(reply_l)
 
-        #Condition for same client leaving multiple chat rooms
-        if mylist[0] == "LEAVE_CHATROOM:" and mylist[4] == Connection_List[4]:
-                if Connection_List[3] == "1":
-                        Room_Ref = "1"
-                        reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
-                        conn.send(reply_l)
-                elif Connection_List[3] == "2":
-                        Room_Ref = "2"
-                        reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
-                        conn.send(reply_l)
-        
+		#Condition for same client leaving multiple chat rooms
+		if mylist[0] == "LEAVE_CHATROOM:" and mylist[4] == Connection_List[4]:
+		        if Connection_List[3] == "1":
+		                Room_Ref = "1"
+		                reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
+		                Conn.send(reply_l)
+		        elif Connection_List[3] == "2":
+		                Room_Ref = "2"
+		                reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
+		                Conn.send(reply_l)
+		
 
-        #Start new thread
-        #start_new_thread(clientthread, (conn,))
+		#Start new thread
+		#start_new_thread(clientthread, (conn,))
 
-        #Deal with messages and disconnections using Threads
-        threading.Thread(target = receive, args = [conn]).start()
-
+		#Deal with messages and disconnections using Threads
+		#threading.Thread(target = receive, args = [conn]).start()
+	#break
 
 
 #Function for handling connections. Used to create Threads - Attempt 1
@@ -123,12 +135,12 @@ def send_all(message):
         for connection in connections:
                 connection.send(message)
 
-def receive(conn):
+def receive(Conn):
         while True:
-                message = conn.recv(1024)
+                message = Conn.recv(1024)
                 if not message:
                         print "Closing connection and removing from registry"
-                        conn.remove(conn)
+                        Conn.remove(Conn)
                         return
                 print "Received %s, sending to all" % message
                 send_all(message)
