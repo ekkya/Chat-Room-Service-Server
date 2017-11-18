@@ -2,44 +2,54 @@ import socket
 import select
 import sys
 from thread import *
-import threading
 
-Stu_ID = "13317728"
-Connection_List = []
-Seq_num = 1
-CRN = "room1"
-Ser_IP = socket.gethostbyname(socket.gethostname())
-print Ser_IP
-Room_Ref = "1"
-Join_ID = Seq_num
-connections = set()
+#Join the chat room - Response sent to client after establishing socket connection
+def JOIN_single(CRN, Ser_IP, Port, Room_Ref, Join_ID):
+        response = ("JOINED CHATROOM: "+ CRN, "SERVER_IP: " + Ser_IP, "PORT: " + Port, "ROOM_REF: " + Room_Ref, "JOIN_ID: " + Join_ID)
+        print "Client (%s, %s) connected" % addr
+        print "Response sent to Client on connection: " + response
 
-serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-serverSocket.bind(('0.0.0.0', 0))
-serverSocket.listen(10)
-serverPort = serverSocket.getsockname()[1]
-print serverPort
-print 'The server is ready to receive on Port: ' + str(serverSocket.getsockname()[1])
+        return response
 
-#Test for basic connection with client - Expecting "Helo" type message
-Conn, address = serverSocket.accept()
-print Conn
-Data = Conn.recv(1024)
+def JOIN_multiple(CRN, Ser_IP, Port, Room_Ref, Join_ID):        
+        response = ("JOINED CHATROOM:"+str(CRN), Ser_IP, Port, Room_Ref, Join_ID)
+        #print "Response sent to Client on connection: " + response
 
-print "Data from base connection client: " + Data
-response = Data.rstrip()
-response1 = "IP:"+Ser_IP
-response2 = "Port:"+str(serverPort)
-response3 = "StudentID:"+Stu_ID
+        return response
 
-resp = str(response + "\n" + response1 + "\n" + response2 + "\n" + response3)
-Conn.sendall(resp)
+#Leave the chat room - Response sent to client after requesting to leave
+def LEAVE_single(CRN, Room_Ref, JOIN_ID):
+        response = ("LEFT CHATROOM: " +str(CRN), "ROOM_REF: " + Room_Ref, "JOIN_ID: " + JOIN_ID)
+        print "Response sent to client when leaving: " + response
 
-##Start thread and kill thread when Data == "KILL_SERVICE"
-while True:
-	start_new_thread(datathread, (Conn,))
-	start_new_thread(clientthread, (Conn,))
-	
+        return response
+
+#Function to send to all the clients present in the connection list
+def send_all(message):
+        for connection in connections:
+                connection.send(message)
+
+def receive(Conn):
+        while True:
+                message = Conn.recv(1024)
+                if not message:
+                        print "Closing connection and removing from registry"
+                        Conn.remove(Conn)
+                        return
+                print "Received %s, sending to all" % message
+                send_all(message)
+                
+def datathread(Conn):
+	Data = Conn.recv(1024)
+	print "Current:" + Data
+	if Data != "JOIN_CHATROOM" and Data != "LEAVE_CHATROOM" and Data != "KILL_SERVICE":
+		print "This is Rubbish"
+		continue
+	elif Data == "KILL_SERVICE":
+		print "Goodbye!"
+		Conn.close()
+	else:
+		return
 
 #Function for handling connections. Used to create Threads - Attempt 1
 def clientthread(Conn):
@@ -89,53 +99,41 @@ def clientthread(Conn):
 		                reply_l = LEAVE_single(CRN, Room_Ref, Join_ID)
 		                Conn.send(reply_l)
 		print "END!!!"
-		break
-
-def datathread(Conn):
-	Data = Conn.recv(1024)
-	print "Current:" + Data
-	if Data != "JOIN_CHATROOM" and Data != "LEAVE_CHATROOM" and Data != "KILL_SERVICE":
-		print "This is Rubbish"
-		continue
-	elif Data == "KILL_SERVICE":
-		print "Goodbye!"
-		Conn.close()
-	else:
-		break
+		return
 	   
-#Join the chat room - Response sent to client after establishing socket connection
-def JOIN_single(CRN, Ser_IP, Port, Room_Ref, Join_ID):
-        response = ("JOINED CHATROOM: "+ CRN, "SERVER_IP: " + Ser_IP, "PORT: " + Port, "ROOM_REF: " + Room_Ref, "JOIN_ID: " + Join_ID)
-        print "Client (%s, %s) connected" % addr
-        print "Response sent to Client on connection: " + response
+Stu_ID = "13317728"
+Connection_List = []
+Seq_num = 1
+CRN = "room1"
+Ser_IP = socket.gethostbyname(socket.gethostname())
+print Ser_IP
+Room_Ref = "1"
+Join_ID = Seq_num
+connections = set()
 
-        return response
+serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+serverSocket.bind(('0.0.0.0', 0))
+serverSocket.listen(10)
+serverPort = serverSocket.getsockname()[1]
+print serverPort
+print 'The server is ready to receive on Port: ' + str(serverSocket.getsockname()[1])
 
-def JOIN_multiple(CRN, Ser_IP, Port, Room_Ref, Join_ID):        
-        response = ("JOINED CHATROOM:"+str(CRN), Ser_IP, Port, Room_Ref, Join_ID)
-        #print "Response sent to Client on connection: " + response
+#Test for basic connection with client - Expecting "Helo" type message
+Conn, address = serverSocket.accept()
+print Conn
+Data = Conn.recv(1024)
 
-        return response
+print "Data from base connection client: " + Data
+response = Data.rstrip()
+response1 = "IP:"+Ser_IP
+response2 = "Port:"+str(serverPort)
+response3 = "StudentID:"+Stu_ID
 
-#Leave the chat room - Response sent to client after requesting to leave
-def LEAVE_single(CRN, Room_Ref, JOIN_ID):
-        response = ("LEFT CHATROOM: " +str(CRN), "ROOM_REF: " + Room_Ref, "JOIN_ID: " + JOIN_ID)
-        print "Response sent to client when leaving: " + response
+resp = str(response + "\n" + response1 + "\n" + response2 + "\n" + response3)
+Conn.sendall(resp)
 
-        return response
-
-#Function to send to all the clients present in the connection list
-def send_all(message):
-        for connection in connections:
-                connection.send(message)
-
-def receive(Conn):
-        while True:
-                message = Conn.recv(1024)
-                if not message:
-                        print "Closing connection and removing from registry"
-                        Conn.remove(Conn)
-                        return
-                print "Received %s, sending to all" % message
-                send_all(message)
-                
+##Start thread and kill thread when Data == "KILL_SERVICE"
+while True:
+	start_new_thread( datathread, (Conn, ) )
+	start_new_thread( clientthread, (Conn, ) )
+	
