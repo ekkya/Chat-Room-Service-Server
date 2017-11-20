@@ -1,11 +1,11 @@
-Project Title
+﻿PROJECT TITLE
 Implement a Centralised Chat Server
 
 Getting Started
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 Prerequisites
-Server implemented using Python 2.7 on a Windows machine.
+Server implemented using Python 2.7 on a Windows machine. It was tested on SCSSOpenNebula with IP address: 10.62.0.75
 
 Installing
 Clone the repository to your local machine
