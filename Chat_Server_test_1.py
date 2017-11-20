@@ -41,20 +41,28 @@ def receive(Conn):
                 send_all(message)
                 
 def datathread(Conn):
+	Seq_num = 1
+	CRN = "room1"
+	Room_Ref = "1"
+	Join_ID = Seq_num
+	serverPort = serverSocket.getsockname()[1]
+	serverIP = socket.gethostbyname(socket.gethostname())
+	send_data = (serverPort, CRN, Room_Ref, Join_ID)
+	print send_data
 	while Data:
 		print "Current:" + Data
 		print "Connection received. Adding to registry"
 		Connection_List.append(Conn)
 		
 		#Need to look at parsing the data coming from the client
-		mylist = data.split(" ")
+		mylist = data.split("\n")
 		print mylist
 		
 		#Condition for joining chat room
-		if mylist[0] == "JOIN_CHATROOM:":
-			Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID, mylist[8])                
+		if mylist[0] == "JOIN_CHATROOM: room1":
+			Connection_List.append(serverSocket, CRN, Room_Ref, Join_ID)                
 			reply_j = JOIN_single(CRN, SER_IP, serverPort, Room_Ref, Join_ID)
-			Conn.send(reply_j)
+			Conn.sendall(reply_j)
 			Seq_num = Seq_num + 1   #Increase Join_ID by 1 for new client
 			Join_ID = Seq_num
 
